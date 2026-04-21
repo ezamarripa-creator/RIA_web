@@ -122,13 +122,18 @@ th {
 </div>
 
 <script>
+
+// 🔗 URL del CSV en GitHub (misma carpeta que index.html)
+const GITHUB_DATA_URL = 'datos.csv';
+
 let datosGlobal = [];
 
-Papa.parse("Tablas dinamicas.csv", {
+// Cargar CSV desde GitHub Pages
+Papa.parse(GITHUB_DATA_URL, {
     download: true,
     header: true,
     complete: function(results) {
-        datosGlobal = results.data;
+        datosGlobal = results.data.filter(row => Object.keys(row).length > 1);
         construirKPIs(datosGlobal);
         construirTabla(datosGlobal);
         construirGraficas(datosGlobal);
@@ -150,7 +155,7 @@ function construirKPIs(data) {
         }
     });
 
-    document.getElementById("promedio").innerText = (suma/contador).toFixed(2);
+    document.getElementById("promedio").innerText = contador ? (suma/contador).toFixed(2) : 0;
 }
 
 // TABLA
@@ -161,6 +166,8 @@ function construirTabla(data) {
 
     thead.innerHTML = "";
     tbody.innerHTML = "";
+
+    if (data.length === 0) return;
 
     let headers = Object.keys(data[0]);
 
@@ -220,6 +227,7 @@ function construirGraficas(data) {
         }
     });
 }
+
 </script>
 
 </body>
