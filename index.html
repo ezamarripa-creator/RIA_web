@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard COBAED</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f4f6f9;
+}
+
+header {
+    background: #1f3c88;
+    color: white;
+    padding: 15px;
+    text-align: center;
+}
+
+.container {
+    padding: 20px;
+}
+
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.kpi {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.kpi h2 {
+    margin: 0;
+    color: #1f3c88;
+}
+
+.charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+canvas {
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.table-section {
+    margin-top: 20px;
+}
+
+input {
+    padding: 10px;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background: #1f3c88;
+    color: white;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Dashboard COBAED - Indicadores Académicos</h1>
+</header>
+
+<div class="container">
+
+    <!-- KPIs -->
+    <div class="kpis">
+        <div class="kpi">
+            <h3>Total Registros</h3>
+            <h2 id="total"></h2>
+        </div>
+        <div class="kpi">
+            <h3>Promedio General</h3>
+            <h2 id="promedio"></h2>
+        </div>
+    </div>
+
+    <!-- GRÁFICAS -->
+    <div class="charts">
+        <canvas id="grafica1"></canvas>
+        <canvas id="grafica2"></canvas>
+    </div>
+
+    <!-- TABLA -->
+    <div class="table-section">
+        <input type="text" id="busqueda" placeholder="Buscar...">
+        <table id="tabla">
+            <thead></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+let datosGlobal = [];
+
+Papa.parse("Tablas dinamicas.csv", {
+    download: true,
+    header: true,
+    complete: function(results) {
+        datosGlobal = results.data;
+        construirKPIs(datosGlobal);
+        construirTabla(datosGlobal);
+        construirGraficas(datosGlobal);
+    }
+});
+
+// KPIs
+function construirKPIs(data) {
+    document.getElementById("total").innerText = data.length;
+
+    let suma = 0;
+    let contador = 0;
+
+    data.forEach(d => {
+        let val = parseFloat(Object.values(d)[1]);
+        if (!isNaN(val)) {
+            suma += val;
+            contador++;
+        }
+    });
+
+    document.getElementById("promedio").innerText = (suma/contador).toFixed(2);
+}
+
+// TABLA
+function construirTabla(data) {
+    let tabla = document.getElementById("tabla");
+    let thead = tabla.querySelector("thead");
+    let tbody = tabla.querySelector("tbody");
+
+    thead.innerHTML = "";
+    tbody.innerHTML = "";
+
+    let headers = Object.keys(data[0]);
+
+    let filaHead = "<tr>";
+    headers.forEach(h => filaHead += `<th>${h}</th>`);
+    filaHead += "</tr>";
+    thead.innerHTML = filaHead;
+
+    data.forEach(row => {
+        let fila = "<tr>";
+        headers.forEach(h => fila += `<td>${row[h]}</td>`);
+        fila += "</tr>";
+        tbody.innerHTML += fila;
+    });
+}
+
+// FILTRO
+document.getElementById("busqueda").addEventListener("keyup", function() {
+    let texto = this.value.toLowerCase();
+    let filtrados = datosGlobal.filter(row =>
+        Object.values(row).join(" ").toLowerCase().includes(texto)
+    );
+    construirTabla(filtrados);
+});
+
+// GRÁFICAS
+function construirGraficas(data) {
+
+    let etiquetas = [];
+    let valores = [];
+
+    data.forEach(d => {
+        let keys = Object.keys(d);
+        etiquetas.push(d[keys[0]]);
+        valores.push(parseFloat(d[keys[1]]) || 0);
+    });
+
+    new Chart(document.getElementById("grafica1"), {
+        type: 'bar',
+        data: {
+            labels: etiquetas,
+            datasets: [{
+                label: 'Valores',
+                data: valores
+            }]
+        }
+    });
+
+    new Chart(document.getElementById("grafica2"), {
+        type: 'line',
+        data: {
+            labels: etiquetas,
+            datasets: [{
+                label: 'Tendencia',
+                data: valores
+            }]
+        }
+    });
+}
+</script>
+
+</body>
+</html>
